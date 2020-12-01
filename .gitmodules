@@ -1,0 +1,4 @@
+[submodule "acidcli/acid"]
+	path = acidcli/acid
+	url = https://github.com/Accelize/acid.git
+	branch = v1

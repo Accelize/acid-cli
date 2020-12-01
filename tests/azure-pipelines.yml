@@ -1,0 +1,269 @@
+---
+name: ACID tests
+
+trigger:
+  batch: true
+  paths:
+    exclude:
+      - readme.md
+      - .gitignore
+      - LICENSE
+schedules:
+  - cron: "0 12 * * 0"
+    displayName: Weekly test
+    branches:
+      include:
+        - master
+    always: true
+pr: none
+pool:
+  vmImage: ubuntu-20.04
+
+resources:
+  repositories:
+    - repository: acid
+      type: github
+      name: Accelize/acid
+      endpoint: Accelize
+      ref: refs/heads/v1
+
+stages:
+  - stage: noAgentsTests
+    displayName: Tests without agents
+    jobs:
+      - job:
+        displayName: Lint tests
+        dependsOn: []
+        steps:
+
+          - checkout: self
+            submodules: true
+
+          - script: "sudo pip install --disable-pip-version-check --no-cache-dir
+                     flake8 yamllint ansible-lint black bandit"
+            displayName: Get Python dependencies
+            condition: always()
+
+          - script: flake8
+            displayName: Lint Python modules
+            condition: always()
+
+          - script: black . --check --diff
+            displayName: Check black style is applied
+            condition: always()
+
+          - script: bandit acidcli -rs B322,B404,B603
+            displayName: Check Python security
+            condition: always()
+
+          - script: yamllint -s acidcli
+            displayName: Lint YAML files
+            condition: always()
+
+          - script: ansible-lint acidcli
+            displayName: Lint Ansible configuration
+            condition: always()
+
+          - template: terraform-lint-steps-template.yml
+            parameters:
+              agents:
+                - awsEc2
+                - azureVm
+
+  - stage: templatesTests
+    displayName: Tests pipelines templates
+    jobs:
+
+      # Start
+      - template: agents/start.yml@acid
+        parameters:
+          jobName: startAgent_AwsEc2_centOs7
+          agentDescription: AWS EC2 CentOS 7
+          provider: awsEc2
+          image: centos_7
+          instanceType: t3a.nano
+          ansiblePlaybook: tests/playbook.yml
+          ansibleRequirements: tests/requirements.yml
+          ansibleMitogen: true
+
+#  TODO: Reenable once Azure agent install issue fixed
+#      - template: agents/start.yml@acid
+#        parameters:
+#          jobName: startAgent_AwsEc2_centOs8
+#          agentDescription: AWS EC2 CentOS 8
+#          provider: awsEc2
+#          image: centos_8
+#          instanceType: t3a.nano
+#
+#      - template: agents/start.yml@acid
+#        parameters:
+#          jobName: startAgent_AwsEc2_ubuntu1804
+#          agentDescription: AWS EC2 Ubuntu 18.04
+#          provider: awsEc2
+#          image: ubuntu_18_04
+#          instanceType: t3a.nano
+
+      - template: agents/start.yml@acid
+        parameters:
+          jobName: startAgent_AzureVm_centOs7
+          agentDescription: Azure VM CentOS 7
+          provider: azureVm
+          image: centos_7
+          instanceType: Standard_B1ls
+
+      - template: agents/start.yml@acid
+        parameters:
+          jobName: startAgent_AzureVm_centOs8
+          agentDescription: Azure VM CentOS 8
+          provider: azureVm
+          image: centos_8
+          instanceType: Standard_B1ls
+
+      - template: agents/start.yml@acid
+        parameters:
+          jobName: startAgent_AzureVm_ubuntu1804
+          agentDescription: Azure VM Ubuntu 18.04
+          provider: azureVm
+          image: ubuntu_18_04
+          instanceType: Standard_B1ls
+          ansiblePlaybook: tests/playbook.yml
+          ansibleRequirements: tests/requirements.yml
+
+      # Tests
+      - job: runTests_AwsEc2_centOs7
+        displayName: Run tests on AWS EC2 CentOS 7
+        dependsOn: startAgent_AwsEc2_centOs7
+        pool:
+          name: Default
+          demands:
+            - agent.Name -equals $(Build.BuildId) AWS EC2 CentOS 7
+        steps:
+          - template: test-steps-template.yml
+
+#      - job: runTests_AwsEc2_centOs8
+#        displayName: Run tests on AWS EC2 CentOS 8
+#        dependsOn: startAgent_AwsEc2_centOs8
+#        pool:
+#          name: Default
+#          demands:
+#            - agent.Name -equals $(Build.BuildId) AWS EC2 CentOS 8
+#        steps:
+#          - template: test-steps-template.yml
+#
+#      - job: runTests_AwsEc2_ubuntu1804
+#        displayName: Run tests on AWS EC2 Ubuntu 18.04
+#        dependsOn: startAgent_AwsEc2_ubuntu1804
+#        pool:
+#          name: Default
+#          demands:
+#            - agent.Name -equals $(Build.BuildId) AWS EC2 Ubuntu 18.04
+#        steps:
+#          - template: test-steps-template.yml
+
+      - job: runTests_AzureVm_centOs7
+        displayName: Run tests on Azure VM CentOS 7
+        dependsOn: startAgent_AzureVm_centOs7
+        pool:
+          name: Default
+          demands:
+            - agent.Name -equals $(Build.BuildId) Azure VM CentOS 7
+        steps:
+          - template: test-steps-template.yml
+
+      - job: runTests_AzureVm_centOs8
+        displayName: Run tests on Azure VM CentOS 8
+        dependsOn: startAgent_AzureVm_centOs8
+        pool:
+          name: Default
+          demands:
+            - agent.Name -equals $(Build.BuildId) Azure VM CentOS 8
+        steps:
+          - template: test-steps-template.yml
+
+      - job: runTests_AzureVm_ubuntu1804
+        displayName: Run tests on Azure VM Ubuntu 18.04
+        dependsOn: startAgent_AzureVm_ubuntu1804
+        pool:
+          name: Default
+          demands:
+            - agent.Name -equals $(Build.BuildId) Azure VM Ubuntu 18.04
+        steps:
+          - template: test-steps-template.yml
+
+      # Stop
+      - template: agents/stop.yml@acid
+        parameters:
+          jobName: stopAgent_AwsEc2_centOs7
+          provider: awsEc2
+          agentDescription: AWS EC2 CentOS 7
+          dependsOn: runTests_AwsEc2_centOs7
+
+#      - template: agents/stop.yml@acid
+#        parameters:
+#          jobName: stopAgent_AwsEc2_centOs8
+#          provider: awsEc2
+#          agentDescription: AWS EC2 CentOS 8
+#          dependsOn: runTests_AwsEc2_centOs8
+#
+#      - template: agents/stop.yml@acid
+#        parameters:
+#          jobName: stopAgent_AwsEc2_ubuntu1804
+#          provider: awsEc2
+#          agentDescription: AWS EC2 Ubuntu 18.04
+#          dependsOn: runTests_AwsEc2_ubuntu1804
+
+      - template: agents/stop.yml@acid
+        parameters:
+          jobName: stopAgent_AzureVm_centOs7
+          provider: azureVm
+          agentDescription: Azure VM CentOS 7
+          dependsOn: runTests_AzureVm_centOs7
+
+      - template: agents/stop.yml@acid
+        parameters:
+          jobName: stopAgent_AzureVm_centOs8
+          provider: azureVm
+          agentDescription: Azure VM CentOS 8
+          dependsOn: runTests_AzureVm_centOs8
+
+      - template: agents/stop.yml@acid
+        parameters:
+          jobName: stopAgent_AzureVm_ubuntu1804
+          provider: azureVm
+          agentDescription: Azure VM Ubuntu 18.04
+          dependsOn: runTests_AzureVm_ubuntu1804
+
+  - stage: cliTests
+    displayName: Tests acid-cli
+    dependsOn: noAgentsTests
+    jobs:
+      - job:
+        displayName: Tests acid-cli
+        variables:
+          - group: acidTests
+        steps:
+
+          - checkout: self
+            submodules: true
+
+          - script: "sudo pip install --disable-pip-version-check --no-cache-dir
+                     pytest-cov"
+            displayName: Get Python dependencies
+
+          - script: |
+              ./setup.py bdist_wheel
+              sudo pip install dist/*.whl
+            displayName: Install
+
+          - task: AWSShellScript@1
+            displayName: Run tests
+            inputs:
+              awsCredentials: AWS
+              regionName: eu-west-1
+              scriptType: inline
+              inlineScript: pytest --installed
+
+          - script: bash <(curl -s https://codecov.io/bash)
+            displayName: Upload Coverage
+            env:
+              CODECOV_TOKEN: $(codecovToken)

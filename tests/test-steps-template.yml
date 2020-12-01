@@ -1,0 +1,6 @@
+---
+# Perform tests on agent
+
+steps:
+  - script: pwd
+    displayName: Check started

@@ -1,0 +1,8 @@
+---
+- hosts: all
+  become: true
+  roles:
+    - name: azure_pipeline_agent
+    - name: accelize.accelize_drm
+      vars:
+        accelize_drm_python: false

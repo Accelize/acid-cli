@@ -1,0 +1,4 @@
+recursive-include acidcli/acid/agents *
+recursive-include acidcli/acid/roles *
+recursive-include acidcli/acid version
+recursive-exclude acidcli .artifactignore *.pyc
