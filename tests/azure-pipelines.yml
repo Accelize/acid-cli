@@ -110,6 +110,7 @@ stages:
           provider: azureVm
           image: centos_7
           instanceType: Standard_B1ls
+          spot: false
 
       - template: agents/start.yml@acid
         parameters:
@@ -118,6 +119,7 @@ stages:
           provider: azureVm
           image: centos_8
           instanceType: Standard_B1ls
+          spot: false
 
       - template: agents/start.yml@acid
         parameters:

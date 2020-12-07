@@ -320,10 +320,9 @@ class _Command:
             dump(tf_vars, json_file)
         agent_src = _os.path.join(_AGENTS_SRC, provider)
         for name in _os.listdir(agent_src):
-            if name not in (".artifactignore",):
-                _os.symlink(
-                    _os.path.join(agent_src, name), _os.path.join(self._agent_dir, name)
-                )
+            _os.symlink(
+                _os.path.join(agent_src, name), _os.path.join(self._agent_dir, name)
+            )
         print(f"Agent resource name: {agent_name}")
         print("Initializing Ansible...")
         if self._params["ansibleRequirements"]:
@@ -341,21 +340,33 @@ class _Command:
             self._call(galaxy_cmd, capture_output=True)
         _os.environ["ANSIBLE_ROLES_PATH"] = f"{_ANSIBLE_ROLES}:{_ACID_DIR}/roles"
 
-        self._tf_init()
-
-        print("Starting agent...")
-        _sys.path.insert(0, self._agent_dir)
-        _os.chdir(self._agent_dir)
-        try:
-            from terraform_apply import apply
-        except ImportError:
-
-            def apply(terraform):
-                """Apply with terraform"""
-                self._call((terraform, "apply", "-auto-approve", "-input=false"))
-
-        apply(terraform=self._terraform)
+        self.tf_run_with_retries(
+            ["apply", "-auto-approve", "-input=false"], "Starting agent..."
+        )
         print("Operation completed")
+
+    def tf_run_with_retries(self, args, msg):
+        """
+        Init and run terraform with retries.
+
+        Args:
+            args (list of str): Terraform arguments.
+            msg (str): Message.
+        """
+        _sys.path.append(_AGENTS_SRC)
+        from tf_run import tf_run
+
+        print("Initializing Terraform...")
+        tf_env = _os.environ.copy()
+        tf_env["TF_PLUGIN_CACHE_DIR"] = _TF_PLUGINS
+        init_cmd = [self._terraform, "init", "-input=false"]
+        if self._force_update:
+            init_cmd.append("-upgrade=true")
+        self._call(init_cmd, env=tf_env, capture_output=True)
+
+        print(msg)
+        _os.chdir(self._agent_dir)
+        tf_run(self._terraform, args)
 
     def _stop(self):
         """Stop the agent."""
@@ -375,10 +386,9 @@ class _Command:
                     return
 
         self._params.update(self._get_parameters())
-        self._tf_init()
-        print("Stopping agent...")
-        self._call((self._terraform, "destroy", "-auto-approve", "-input=false"))
-
+        self.tf_run_with_retries(
+            ["destroy", "-auto-approve", "-input=false"], "Stopping agent..."
+        )
         from shutil import rmtree
 
         rmtree(self._agent_dir, ignore_errors=True)
@@ -507,16 +517,6 @@ class _Command:
             )
         _os.chmod(self._terraform_path, _os.stat(self._terraform_path).st_mode | 0o111)
         return self._terraform_path
-
-    def _tf_init(self):
-        """Init Terraform."""
-        print("Initializing Terraform...")
-        tf_env = _os.environ.copy()
-        tf_env["TF_PLUGIN_CACHE_DIR"] = _TF_PLUGINS
-        init_cmd = [self._terraform, "init", "-input=false"]
-        if self._force_update:
-            init_cmd.append("-upgrade=true")
-        self._call(init_cmd, env=tf_env, capture_output=True)
 
     def _tf_output(self, check=True):
         """
