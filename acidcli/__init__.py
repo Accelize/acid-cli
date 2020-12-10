@@ -91,6 +91,10 @@ class _Command:
             'Can also be set with "AZURE_AGENT_TOKEN" environment variable.',
         )
         action.add_argument(
+            "--agentVersion",
+            help="Azure Pipeline agent version to use. Default to the latest version.",
+        )
+        action.add_argument(
             "--provider",
             "-p",
             help="Agent instance provider.",
@@ -291,6 +295,7 @@ class _Command:
             ("AZURE_AGENT_POOL", "agentPool"),
             ("AZURE_AGENT_URL", "agentOrganizationUrl"),
             ("AZURE_AGENT_TOKEN", "agentManagerToken"),
+            ("AZURE_AGENT_VERSION", "agentVersion"),
         ):
             if self._params[parameter] is not None:
                 _os.environ[key] = self._params[parameter]

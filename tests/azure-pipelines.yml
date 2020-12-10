@@ -86,22 +86,26 @@ stages:
           ansibleRequirements: tests/requirements.yml
           ansibleMitogen: true
 
-#  TODO: Reenable once Azure agent install issue fixed
-#      - template: agents/start.yml@acid
-#        parameters:
-#          jobName: startAgent_AwsEc2_centOs8
-#          agentDescription: AWS EC2 CentOS 8
-#          provider: awsEc2
-#          image: centos_8
-#          instanceType: t3a.nano
-#
-#      - template: agents/start.yml@acid
-#        parameters:
-#          jobName: startAgent_AwsEc2_ubuntu1804
-#          agentDescription: AWS EC2 Ubuntu 18.04
-#          provider: awsEc2
-#          image: ubuntu_18_04
-#          instanceType: t3a.nano
+      - template: agents/start.yml@acid
+        parameters:
+          jobName: startAgent_AwsEc2_centOs8
+          agentDescription: AWS EC2 CentOS 8
+          provider: awsEc2
+          image: centos_8
+          instanceType: t3a.nano
+          # TODO: Remove once fixed
+          # https://github.com/microsoft/azure-pipelines-agent/issues/3176
+          agentVersion: 2.175.2
+
+      - template: agents/start.yml@acid
+        parameters:
+          jobName: startAgent_AwsEc2_ubuntu1804
+          agentDescription: AWS EC2 Ubuntu 18.04
+          provider: awsEc2
+          image: ubuntu_18_04
+          instanceType: t3a.nano
+          # TODO: Same as above
+          agentVersion: 2.175.2
 
       - template: agents/start.yml@acid
         parameters:
@@ -142,25 +146,25 @@ stages:
         steps:
           - template: test-steps-template.yml
 
-#      - job: runTests_AwsEc2_centOs8
-#        displayName: Run tests on AWS EC2 CentOS 8
-#        dependsOn: startAgent_AwsEc2_centOs8
-#        pool:
-#          name: Default
-#          demands:
-#            - agent.Name -equals $(Build.BuildId) AWS EC2 CentOS 8
-#        steps:
-#          - template: test-steps-template.yml
-#
-#      - job: runTests_AwsEc2_ubuntu1804
-#        displayName: Run tests on AWS EC2 Ubuntu 18.04
-#        dependsOn: startAgent_AwsEc2_ubuntu1804
-#        pool:
-#          name: Default
-#          demands:
-#            - agent.Name -equals $(Build.BuildId) AWS EC2 Ubuntu 18.04
-#        steps:
-#          - template: test-steps-template.yml
+      - job: runTests_AwsEc2_centOs8
+        displayName: Run tests on AWS EC2 CentOS 8
+        dependsOn: startAgent_AwsEc2_centOs8
+        pool:
+          name: Default
+          demands:
+            - agent.Name -equals $(Build.BuildId) AWS EC2 CentOS 8
+        steps:
+          - template: test-steps-template.yml
+
+      - job: runTests_AwsEc2_ubuntu1804
+        displayName: Run tests on AWS EC2 Ubuntu 18.04
+        dependsOn: startAgent_AwsEc2_ubuntu1804
+        pool:
+          name: Default
+          demands:
+            - agent.Name -equals $(Build.BuildId) AWS EC2 Ubuntu 18.04
+        steps:
+          - template: test-steps-template.yml
 
       - job: runTests_AzureVm_centOs7
         displayName: Run tests on Azure VM CentOS 7
@@ -200,19 +204,19 @@ stages:
           agentDescription: AWS EC2 CentOS 7
           dependsOn: runTests_AwsEc2_centOs7
 
-#      - template: agents/stop.yml@acid
-#        parameters:
-#          jobName: stopAgent_AwsEc2_centOs8
-#          provider: awsEc2
-#          agentDescription: AWS EC2 CentOS 8
-#          dependsOn: runTests_AwsEc2_centOs8
-#
-#      - template: agents/stop.yml@acid
-#        parameters:
-#          jobName: stopAgent_AwsEc2_ubuntu1804
-#          provider: awsEc2
-#          agentDescription: AWS EC2 Ubuntu 18.04
-#          dependsOn: runTests_AwsEc2_ubuntu1804
+      - template: agents/stop.yml@acid
+        parameters:
+          jobName: stopAgent_AwsEc2_centOs8
+          provider: awsEc2
+          agentDescription: AWS EC2 CentOS 8
+          dependsOn: runTests_AwsEc2_centOs8
+
+      - template: agents/stop.yml@acid
+        parameters:
+          jobName: stopAgent_AwsEc2_ubuntu1804
+          provider: awsEc2
+          agentDescription: AWS EC2 Ubuntu 18.04
+          dependsOn: runTests_AwsEc2_ubuntu1804
 
       - template: agents/stop.yml@acid
         parameters:
