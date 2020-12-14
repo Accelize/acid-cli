@@ -54,6 +54,8 @@ class _Command:
         else:
             agent_default = None
         agent_load_args = dict(default=agent_default, required=agent_default is None)
+        bool_choices = ("true", "false")
+        bool_completer = ChoicesCompleter(bool_choices)
 
         description = "Start a new agent."
         action = sub_parsers.add_parser(
@@ -131,12 +133,17 @@ class _Command:
             "If not specified, the agent will run infinitely.",
             type=int,
         )
-        choices = ("true", "false")
         action.add_argument(
             "--spot",
             help="Use spot instance",
-            choices=choices,
-        ).completer = ChoicesCompleter(choices)
+            choices=bool_choices,
+        ).completer = bool_completer
+        action.add_argument(
+            "--inMemoryWorkDir",
+            help='If "true", the agent work directory and "/tmp" are mounted in memory '
+            "(tmpfs)",
+            choices=bool_choices,
+        ).completer = bool_completer
         action.add_argument(
             "--region",
             help="Cloud provider region",
@@ -296,6 +303,7 @@ class _Command:
             ("AZURE_AGENT_URL", "agentOrganizationUrl"),
             ("AZURE_AGENT_TOKEN", "agentManagerToken"),
             ("AZURE_AGENT_VERSION", "agentVersion"),
+            ("AZURE_AGENT_IN_MEMORY_WORK_DIR", "inMemoryWorkDir"),
         ):
             if self._params[parameter] is not None:
                 _os.environ[key] = self._params[parameter]

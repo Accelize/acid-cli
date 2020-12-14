@@ -106,6 +106,7 @@ stages:
           instanceType: t3a.nano
           # TODO: Same as above
           agentVersion: 2.175.2
+          inMemoryWorkDir: true
 
       - template: agents/start.yml@acid
         parameters:
@@ -115,6 +116,7 @@ stages:
           image: centos_7
           instanceType: Standard_B1ls
           spot: false
+          inMemoryWorkDir: true
 
       - template: agents/start.yml@acid
         parameters:
@@ -124,6 +126,7 @@ stages:
           image: centos_8
           instanceType: Standard_B1ls
           spot: false
+          inMemoryWorkDir: true
 
       - template: agents/start.yml@acid
         parameters:
