@@ -30,7 +30,13 @@ PACKAGE_INFO = dict(
     project_urls={"Download": "https://pypi.org/project/acid"},
     license="Apache License, Version 2.0",
     python_requires=">=3.6",
-    install_requires=["python-dateutil", "requests", "ansible>=2.8", "argcomplete"],
+    install_requires=[
+        "python-dateutil",
+        "requests",
+        "ansible>=2.8",
+        "argcomplete",
+        "awscli",  # Required by acid/agents/awsEc2/agent.tf
+    ],
     setup_requires=["setuptools"],
     tests_require=["pytest"],
     packages=find_packages(exclude=["agents", "tests"]),

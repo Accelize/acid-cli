@@ -1,5 +1,5 @@
 recursive-include acidcli/acid/agents *
 recursive-include acidcli/acid/roles *
 recursive-include acidcli/acid version
-recursive-exclude acidcli/acid/agents *.yml .artifactignore
+recursive-exclude acidcli/acid/agents start.yml stop.yml run_script.yml .artifactignore
 recursive-exclude acidcli *.pyc

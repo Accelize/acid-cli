@@ -435,16 +435,30 @@ class _Command:
         if "-i" in ssh_args:
             raise ValueError('Remove "-i" SSH argument, it is managed by Acid.')
         out = self._tf_output()
+
         cwd = _os.getcwd()
         _os.chdir(self._agent_dir)
+
+        private_key = _os.path.realpath(out["privateKey"])
+        user = out["user"]
+        try:
+            ip_address = out["ipAddress"]
+        except KeyError:
+            raise RuntimeError(
+                "Unable to get the instance IP address. This can be caused by "
+                'an unsuccessful "acid start". You can connect using the following SSH '
+                "command with the proper IP address: "
+                f'"ssh -i {private_key} {user}@IP_ADDRESS"'
+            )
+
         from subprocess import run
 
         run(
             [
                 "ssh",
-                f"{out['user']}@{out['ipAddress']}",
+                f"{user}@{ip_address}",
                 "-i",
-                _os.path.realpath(out["privateKey"]),
+                private_key,
                 "-o",
                 "StrictHostKeyChecking=no",
             ]
