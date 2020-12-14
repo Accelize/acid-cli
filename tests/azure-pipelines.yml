@@ -52,7 +52,7 @@ stages:
             displayName: Check black style is applied
             condition: always()
 
-          - script: bandit acidcli -rs B322,B404,B603
+          - script: bandit acidcli -rs B404,B603
             displayName: Check Python security
             condition: always()
 
