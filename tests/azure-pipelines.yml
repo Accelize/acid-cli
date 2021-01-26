@@ -93,9 +93,6 @@ stages:
           provider: awsEc2
           image: centos_8
           instanceType: t3a.nano
-          # TODO: Remove once fixed
-          # https://github.com/microsoft/azure-pipelines-agent/issues/3176
-          agentVersion: 2.175.2
 
       - template: agents/start.yml@acid
         parameters:
@@ -104,8 +101,6 @@ stages:
           provider: awsEc2
           image: ubuntu_18_04
           instanceType: t3a.nano
-          # TODO: Same as above
-          agentVersion: 2.175.2
           inMemoryWorkDir: true
 
       - template: agents/start.yml@acid

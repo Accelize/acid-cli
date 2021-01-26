@@ -97,6 +97,12 @@ class _Command:
             help="Azure Pipeline agent version to use. Default to the latest version.",
         )
         action.add_argument(
+            "--agentEnv",
+            help="Azure Pipeline agent environment variables as a JSON formatted "
+            "string.",
+            default='{"AZP_AGENT_USE_LEGACY_HTTP": "true"}',
+        )
+        action.add_argument(
             "--provider",
             "-p",
             help="Agent instance provider.",
@@ -304,6 +310,7 @@ class _Command:
             ("AZURE_AGENT_TOKEN", "agentManagerToken"),
             ("AZURE_AGENT_VERSION", "agentVersion"),
             ("AZURE_AGENT_IN_MEMORY_WORK_DIR", "inMemoryWorkDir"),
+            ("AZURE_AGENT_ENV", "agentEnv"),
         ):
             if self._params[parameter] is not None:
                 _os.environ[key] = self._params[parameter]
