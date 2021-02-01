@@ -320,7 +320,6 @@ class _Command:
             key: self._params[key]
             for key in (
                 "image",
-                "ansiblePlaybook",
                 "instanceType",
                 "spot",
                 "resourceGroupName",
@@ -358,11 +357,18 @@ class _Command:
             if self._force_update:
                 galaxy_cmd.append("--force-with-deps")
             self._call(galaxy_cmd, capture_output=True)
-        _os.environ["ANSIBLE_ROLES_PATH"] = f"{_ANSIBLE_ROLES}:{_ACID_DIR}/roles"
 
         self.tf_run_with_retries(
             ["apply", "-auto-approve", "-input=false"], "Starting agent..."
         )
+
+        from ansible_run import ansible_run
+
+        _os.environ["ANSIBLE_ROLES_PATH"] = f"{_ANSIBLE_ROLES}:{_ACID_DIR}/roles"
+        ansible_run(
+            ansible_playbook=self._params["ansiblePlaybook"], terraform=self._terraform
+        )
+
         print("Operation completed")
 
     def tf_run_with_retries(self, args, msg):
