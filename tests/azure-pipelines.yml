@@ -8,6 +8,7 @@ trigger:
       - readme.md
       - .gitignore
       - LICENSE
+      - .pre-commit-config.yaml
 schedules:
   - cron: "0 12 * * 0"
     displayName: Weekly test
@@ -25,7 +26,7 @@ resources:
       type: github
       name: Accelize/acid
       endpoint: Accelize
-      ref: refs/heads/v1.1.1
+      ref: refs/heads/v1
 
 stages:
   - stage: noAgentsTests
@@ -96,29 +97,10 @@ stages:
 
       - template: agents/start.yml@acid
         parameters:
-          jobName: startAgent_AwsEc2_ubuntu1804
-          agentDescription: AWS EC2 Ubuntu 18.04
-          provider: awsEc2
-          image: ubuntu_18_04
-          instanceType: t3a.nano
-          inMemoryWorkDir: true
-
-      - template: agents/start.yml@acid
-        parameters:
           jobName: startAgent_AzureVm_centOs7
           agentDescription: Azure VM CentOS 7
           provider: azureVm
           image: centos_7
-          instanceType: Standard_B1ls
-          spot: false
-          inMemoryWorkDir: true
-
-      - template: agents/start.yml@acid
-        parameters:
-          jobName: startAgent_AzureVm_centOs8
-          agentDescription: Azure VM CentOS 8
-          provider: azureVm
-          image: centos_8
           instanceType: Standard_B1ls
           spot: false
           inMemoryWorkDir: true
@@ -154,16 +136,6 @@ stages:
         steps:
           - template: test-steps-template.yml
 
-      - job: runTests_AwsEc2_ubuntu1804
-        displayName: Run tests on AWS EC2 Ubuntu 18.04
-        dependsOn: startAgent_AwsEc2_ubuntu1804
-        pool:
-          name: Default
-          demands:
-            - agent.Name -equals $(Build.BuildId) AWS EC2 Ubuntu 18.04
-        steps:
-          - template: test-steps-template.yml
-
       - job: runTests_AzureVm_centOs7
         displayName: Run tests on Azure VM CentOS 7
         dependsOn: startAgent_AzureVm_centOs7
@@ -171,16 +143,6 @@ stages:
           name: Default
           demands:
             - agent.Name -equals $(Build.BuildId) Azure VM CentOS 7
-        steps:
-          - template: test-steps-template.yml
-
-      - job: runTests_AzureVm_centOs8
-        displayName: Run tests on Azure VM CentOS 8
-        dependsOn: startAgent_AzureVm_centOs8
-        pool:
-          name: Default
-          demands:
-            - agent.Name -equals $(Build.BuildId) Azure VM CentOS 8
         steps:
           - template: test-steps-template.yml
 
@@ -211,24 +173,10 @@ stages:
 
       - template: agents/stop.yml@acid
         parameters:
-          jobName: stopAgent_AwsEc2_ubuntu1804
-          provider: awsEc2
-          agentDescription: AWS EC2 Ubuntu 18.04
-          dependsOn: runTests_AwsEc2_ubuntu1804
-
-      - template: agents/stop.yml@acid
-        parameters:
           jobName: stopAgent_AzureVm_centOs7
           provider: azureVm
           agentDescription: Azure VM CentOS 7
           dependsOn: runTests_AzureVm_centOs7
-
-      - template: agents/stop.yml@acid
-        parameters:
-          jobName: stopAgent_AzureVm_centOs8
-          provider: azureVm
-          agentDescription: Azure VM CentOS 8
-          dependsOn: runTests_AzureVm_centOs8
 
       - template: agents/stop.yml@acid
         parameters:
@@ -271,3 +219,57 @@ stages:
             displayName: Upload Coverage
             env:
               CODECOV_TOKEN: $(codecovToken)
+
+  - stage: publish
+    displayName: Publish acid-cli
+    dependsOn:
+      - cliTests
+      - templatesTests
+    jobs:
+      - job:
+        displayName: Publish acid-cli
+        variables:
+          - group: twine
+        steps:
+
+          - checkout: self
+            submodules: true
+
+          - script: git submodule update --remote --init
+            displayName: Ensure submodule is up to date
+
+          - task: PythonScript@0
+            displayName: Checks if PyPI is up to date
+            inputs:
+              scriptSource: inline
+              script: |
+                from xml.etree.ElementTree import fromstring
+                from urllib.request import urlopen
+
+                with urlopen("https://pypi.org/rss/project/acidcli/releases.xml") as resp:
+                    releases = fromstring(resp.read())
+                latest = releases.find("channel").find("item").find("title").text
+                print(f'Latest published version: "{latest}"')
+
+                with open("acidcli/acid/version", "rt") as version_file:
+                    current = version_file.read().strip().lstrip("v")
+                print(f'Current build version: "{current}"')
+
+                to_update = latest != current
+                print(f'Update required: "{to_update}"')
+                print(f"##vso[task.setvariable variable=toUpdate]{to_update}")
+
+          - script: ./setup.py bdist_wheel
+            displayName: Build
+            condition: and(succeeded(), eq(variables.toUpdate, 'True'))
+
+          - script: sudo pip install --disable-pip-version-check --no-cache-dir twine
+            displayName: Get Twine
+            condition: and(succeeded(), eq(variables.toUpdate, 'True'))
+
+          - script: twine upload --non-interactive --disable-progress-bar dist/*
+            displayName: Publish package on PyPI
+            env:
+              TWINE_PASSWORD: $(twinePassword)
+              TWINE_USERNAME: $(twineUsername)
+            condition: and(succeeded(), eq(variables.toUpdate, 'True'))

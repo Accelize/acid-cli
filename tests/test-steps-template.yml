@@ -2,5 +2,10 @@
 # Perform tests on agent
 
 steps:
+  - checkout: none
   - script: pwd
-    displayName: Check started
+    displayName: Print working directory
+  - script: uname -a
+    displayName: Print Kernel version
+  - script: cat /etc/os-release
+    displayName: Print OS version

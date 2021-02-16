@@ -95,7 +95,7 @@ def test_agent():
     ]
     try:
         # Test create an agent
-        acid(["start", "-t", "t3a.nano", "-a", "agent1"])
+        acid(["start", "-t", "t3a.nano", "-a", "agent1", "-i", "centos_7"])
         assert acid(["list"]).stdout.strip()
         assert acid(["show", "-a", "agent1"])
         acid(
@@ -117,6 +117,8 @@ def test_agent():
                     "start",
                     "-t",
                     "t3a.nano",
+                    "-i",
+                    "centos_7",
                     "-a",
                     "agent2",
                     "--ansiblePlaybook",
