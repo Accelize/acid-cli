@@ -1,5 +1,5 @@
 ---
-name: ACID tests
+name: Acid tests
 
 trigger:
   batch: true
@@ -27,6 +27,12 @@ resources:
       name: Accelize/acid
       endpoint: Accelize
       ref: refs/heads/v1
+  pipelines:
+    - pipeline: acidTrigger
+      source: Acid trigger
+      trigger:
+        branches:
+          - v1
 
 stages:
   - stage: noAgentsTests
