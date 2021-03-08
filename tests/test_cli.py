@@ -83,7 +83,7 @@ def test_images_completer():
     assert cmd._images_completer("", Namespace(provider=None)) is None
 
 
-def test_agent():
+def test_agent(capsys):
     """acid start & stop"""
     check_connection = [
         "--",
@@ -95,7 +95,12 @@ def test_agent():
     ]
     try:
         # Test create an agent
-        acid(["start", "-t", "t3a.nano", "-a", "agent1", "-i", "centos_7"])
+        with capsys.disabled():
+            print("")
+            acid(
+                ["start", "-t", "t3a.nano", "-a", "agent1", "-i", "centos_7"],
+                capture_output=False,
+            )
         assert acid(["list"]).stdout.strip()
         assert acid(["show", "-a", "agent1"])
         acid(
@@ -112,22 +117,24 @@ def test_agent():
 
         # Test create another agent
         try:
-            acid(
-                [
-                    "start",
-                    "-t",
-                    "t3a.nano",
-                    "-i",
-                    "centos_7",
-                    "-a",
-                    "agent2",
-                    "--ansiblePlaybook",
-                    "tests/playbook.yml",
-                    "--ansibleRequirements",
-                    "tests/requirements.yml",
-                    "--update",
-                ]
-            )
+            with capsys.disabled():
+                acid(
+                    [
+                        "start",
+                        "-t",
+                        "t3a.nano",
+                        "-i",
+                        "centos_7",
+                        "-a",
+                        "agent2",
+                        "--ansiblePlaybook",
+                        "tests/playbook.yml",
+                        "--ansibleRequirements",
+                        "tests/requirements.yml",
+                        "--update",
+                    ],
+                    capture_output=False,
+                )
             assert acid(["list"]).stdout.strip()
             assert acid(["show", "-a", "agent2"])
             acid(
@@ -146,8 +153,10 @@ def test_agent():
             acid(["stop", "-a", "agent2"], stdin="n\n")
 
         finally:
-            acid(["stop", "-a", "agent2"], stdin="y\n")
+            with capsys.disabled():
+                acid(["stop", "-a", "agent2"], stdin="y\n", capture_output=False)
 
     finally:
-        for agent in acid(["list"]).stdout.strip().splitlines():
-            acid(["stop", "-a", agent, "-f"])
+        with capsys.disabled():
+            for agent in acid(["list"]).stdout.strip().splitlines():
+                acid(["stop", "-a", agent, "-f"], capture_output=False)

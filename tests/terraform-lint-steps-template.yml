@@ -10,6 +10,8 @@ steps:
         displayName: Initialize "${{ agent }}" configuration
         workingDirectory: acidcli/acid/agents/${{ agent }}
         condition: always()
+        env:
+          TF_PLUGIN_CACHE_DIR: $(cacheDir)/.tf_plugins
 
       - script: terraform fmt 1>&2
         displayName: Lint "${{ agent }}" configuration

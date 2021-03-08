@@ -1,6 +1,6 @@
 """Pytest configuration"""
 import pytest
-from subprocess import run
+from subprocess import run, TimeoutExpired
 from os import environ
 from os.path import dirname, join
 import sys
@@ -35,7 +35,15 @@ def acid_installed(request):
     return request.config.getoption("--installed")
 
 
-def acid(args, except_fail=False, cmd=None, debug=True, stdin=None):
+def acid(
+    args,
+    except_fail=False,
+    cmd=None,
+    debug=True,
+    stdin=None,
+    capture_output=True,
+    timeout=600,
+):
     """
     Run acid.
 
@@ -46,6 +54,8 @@ def acid(args, except_fail=False, cmd=None, debug=True, stdin=None):
             if command fail.
         debug (bool): If True, enable Acid debug mode that increase verbosity.
         stdin (str): If specified, send string over standard input.
+        capture_output (bool): if True, capture output.
+        timeout (int): Command timeout in seconds.
 
     Returns:
         subprocess.CompletedProcess: Result
@@ -53,20 +63,32 @@ def acid(args, except_fail=False, cmd=None, debug=True, stdin=None):
     command = [CMD if cmd is None else cmd]
     if debug:
         command.append("--debug")
-    process = run(
-        command + args, capture_output=True, universal_newlines=True, input=stdin
-    )
+    try:
+        process = run(
+            command + args,
+            capture_output=capture_output,
+            universal_newlines=True,
+            input=stdin,
+            timeout=timeout,
+        )
+    except TimeoutExpired as exception:
+        return pytest.fail(
+            f'Timeout on "{" ".join(["acid"] + args)}" after {exception.args[1]:.0f}s'
+        )
+
     returncode = process.returncode
     if (returncode and not except_fail) or (except_fail and not returncode):
-        stdout = process.stdout.strip()
-        full_cmd = " ".join(["acid"] + args)
-        if stdout:
-            stdout = f"STDOUT:\n{stdout}"
-        stderr = process.stderr.strip()
-        if stderr:
-            stderr = f"STDERR:\n{stderr}"
+        if capture_output:
+            stdout = process.stdout.strip()
+            if stdout:
+                stdout = f"STDOUT:\n{stdout}"
+            stderr = process.stderr.strip()
+            if stderr:
+                stderr = f"STDERR:\n{stderr}"
+        else:
+            stdout = stderr = None
         pytest.fail(
-            f"\n\nCOMMAND:\n{full_cmd}\n\n"
+            f"\n\nCOMMAND:\n{' '.join(['acid'] + args)}\n\n"
             + "\n\n".join(out for out in (stdout, stderr) if out)
         )
     return process
@@ -75,4 +97,5 @@ def acid(args, except_fail=False, cmd=None, debug=True, stdin=None):
 @pytest.fixture(scope="session")
 def tmp_user_dir(tmpdir_factory):
     """Ensure acid use a temporary user directory"""
-    environ["ACID_USER_DIR"] = str(tmpdir_factory.mktemp("acid"))
+    if "ACID_USER_DIR" not in environ:
+        environ["ACID_USER_DIR"] = str(tmpdir_factory.mktemp("acid"))

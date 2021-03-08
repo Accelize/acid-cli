@@ -41,14 +41,23 @@ stages:
       - job:
         displayName: Lint tests
         dependsOn: []
+        variables:
+          cacheDir: /tmp/.pipeline_cache
         steps:
 
           - checkout: self
             submodules: true
 
-          - script: "sudo pip install --disable-pip-version-check --no-cache-dir
-                     flake8 yamllint ansible-lint black bandit"
-            displayName: Get Python dependencies
+          - task: Cache@2
+            inputs:
+              key: noAgentsTests
+              path: $(cacheDir)
+            displayName: Cache packages
+
+          - script: |
+              echo "##vso[task.prependpath]$HOME/.local/bin"
+              pip install --disable-pip-version-check --cache-dir $(cacheDir)/.pip_packages flake8 yamllint ansible-lint black bandit
+            displayName: Get dependencies
             condition: always()
 
           - script: flake8
@@ -201,18 +210,29 @@ stages:
         displayName: Tests acid-cli
         variables:
           - group: acidTests
+          - name: cacheDir
+            value: /tmp/.acid/lib  # Application cache dir
+
         steps:
 
           - checkout: self
             submodules: true
 
-          - script: "sudo pip install --disable-pip-version-check --no-cache-dir
-                     pytest-cov"
-            displayName: Get Python dependencies
+          - task: Cache@2
+            inputs:
+              key: cliTests
+              path: $(cacheDir)
+            displayName: Cache packages
+
+          - script: |
+              echo "##vso[task.prependpath]$HOME/.local/bin"
+              pip install --disable-pip-version-check --cache-dir $(cacheDir)/.pip_packages pytest-cov
+            displayName: Get dependencies
+            condition: always()
 
           - script: |
               ./setup.py bdist_wheel
-              sudo pip install dist/*.whl
+              pip install dist/*.whl --cache-dir $(cacheDir)/.pip_packages
             displayName: Install
 
           - task: AWSShellScript@1
@@ -221,7 +241,9 @@ stages:
               awsCredentials: AWS
               regionName: eu-west-1
               scriptType: inline
-              inlineScript: pytest --installed
+              inlineScript: pytest --installed --tb=short
+            env:
+              ACID_USER_DIR: /tmp/.acid
 
           - script: bash <(curl -s https://codecov.io/bash)
             displayName: Upload Coverage
@@ -271,7 +293,9 @@ stages:
             displayName: Build
             condition: and(succeeded(), eq(variables.toUpdate, 'True'))
 
-          - script: sudo pip install --disable-pip-version-check --no-cache-dir twine
+          - script: |
+              echo "##vso[task.prependpath]$HOME/.local/bin"
+              pip install --disable-pip-version-check --no-cache-dir twine
             displayName: Get Twine
             condition: and(succeeded(), eq(variables.toUpdate, 'True'))
 
