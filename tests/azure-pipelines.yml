@@ -92,6 +92,7 @@ stages:
           ansiblePlaybook: tests/playbook.yml
           ansibleRequirements: tests/requirements.yml
           ansibleMitogen: true
+          volumeSize: 15
 
       - template: agents/start.yml@acid
         parameters:
@@ -110,6 +111,7 @@ stages:
           instanceType: Standard_B1ls
           spot: false
           inMemoryWorkDir: true
+          volumeSize: 70
 
       - template: agents/start.yml@acid
         parameters:

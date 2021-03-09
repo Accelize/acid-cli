@@ -111,6 +111,12 @@ class _Command:
         ).completer = providers_completer
         action.add_argument("--instanceType", "-t", help="Agent instance type.")
         action.add_argument(
+            "--volumeSize",
+            "-s",
+            type=int,
+            help="Root volume size in GB. Default to size specified by the image",
+        )
+        action.add_argument(
             "--image", "-i", help="Image name to use."
         ).completer = self._images_completer
         action.add_argument(
@@ -324,6 +330,7 @@ class _Command:
                 "spot",
                 "resourceGroupName",
                 "virtualNetworkName",
+                "volumeSize",
             )
             if self._params[key]
         }
