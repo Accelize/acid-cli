@@ -48,6 +48,9 @@ stages:
           - checkout: self
             submodules: true
 
+          - script: git submodule update --remote --init --force
+            displayName: Ensure submodule is up to date
+
           - task: Cache@2
             inputs:
               key: noAgentsTests
@@ -56,7 +59,7 @@ stages:
 
           - script: |
               echo "##vso[task.prependpath]$HOME/.local/bin"
-              pip install --disable-pip-version-check --cache-dir $(cacheDir)/.pip_packages flake8 yamllint ansible-lint black bandit
+              pip install --disable-pip-version-check --cache-dir $(cacheDir)/.pip_packages -U ansible flake8 yamllint ansible-lint black bandit
             displayName: Get dependencies
             condition: always()
 
@@ -100,7 +103,6 @@ stages:
           instanceType: t3a.nano
           ansiblePlaybook: tests/playbook.yml
           ansibleRequirements: tests/requirements.yml
-          ansibleMitogen: true
           volumeSize: 15
 
       - template: agents/start.yml@acid
@@ -265,7 +267,7 @@ stages:
           - checkout: self
             submodules: true
 
-          - script: git submodule update --remote --init
+          - script: git submodule update --remote --init --force
             displayName: Ensure submodule is up to date
 
           - task: PythonScript@0
