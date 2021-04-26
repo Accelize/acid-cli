@@ -130,7 +130,7 @@ stages:
           agentDescription: Azure VM Ubuntu 18.04
           provider: azureVm
           image: ubuntu_18_04
-          instanceType: Standard_B1ls
+          instanceType: Standard_F1
           ansiblePlaybook: tests/playbook.yml
           ansibleRequirements: tests/requirements.yml
 
