@@ -115,6 +115,22 @@ stages:
 
       - template: agents/start.yml@acid
         parameters:
+          jobName: startAgent_AwsEc2_ubuntu1804
+          agentDescription: AWS EC2 Ubuntu 18.04
+          provider: awsEc2
+          image: ubuntu_18_04
+          instanceType: t3a.nano
+
+      - template: agents/start.yml@acid
+        parameters:
+          jobName: startAgent_AwsEc2_ubuntu2004
+          agentDescription: AWS EC2 Ubuntu 20.04
+          provider: awsEc2
+          image: ubuntu_20_04
+          instanceType: t3a.nano
+
+      - template: agents/start.yml@acid
+        parameters:
           jobName: startAgent_AzureVm_centOs7
           agentDescription: Azure VM CentOS 7
           provider: azureVm
@@ -155,6 +171,26 @@ stages:
         steps:
           - template: test-steps-template.yml
 
+      - job: runTests_AwsEc2_ubuntu1804
+        displayName: Run tests on AWS EC2 Ubuntu 18.04
+        dependsOn: startAgent_AwsEc2_ubuntu1804
+        pool:
+          name: Default
+          demands:
+            - agent.Name -equals $(Build.BuildId) AWS EC2 Ubuntu 18.04
+        steps:
+          - template: test-steps-template.yml
+
+      - job: runTests_AwsEc2_ubuntu2004
+        displayName: Run tests on AWS EC2 Ubuntu 20.04
+        dependsOn: startAgent_AwsEc2_ubuntu2004
+        pool:
+          name: Default
+          demands:
+            - agent.Name -equals $(Build.BuildId) AWS EC2 Ubuntu 20.04
+        steps:
+          - template: test-steps-template.yml
+
       - job: runTests_AzureVm_centOs7
         displayName: Run tests on Azure VM CentOS 7
         dependsOn: startAgent_AzureVm_centOs7
@@ -189,6 +225,20 @@ stages:
           provider: awsEc2
           agentDescription: AWS EC2 CentOS 8
           dependsOn: runTests_AwsEc2_centOs8
+
+      - template: agents/stop.yml@acid
+        parameters:
+          jobName: stopAgent_AwsEc2_ubuntu1804
+          provider: awsEc2
+          agentDescription: AWS EC2 Ubuntu 18.04
+          dependsOn: runTests_AwsEc2_ubuntu1804
+
+      - template: agents/stop.yml@acid
+        parameters:
+          jobName: stopAgent_AwsEc2_ubuntu2004
+          provider: awsEc2
+          agentDescription: AWS EC2 Ubuntu 20.04
+          dependsOn: runTests_AwsEc2_ubuntu2004
 
       - template: agents/stop.yml@acid
         parameters:
