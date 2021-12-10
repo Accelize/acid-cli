@@ -27,7 +27,7 @@ def test_installed(acid_installed):
 def test_images():
     """acid images"""
     assert "centos_8" in acid(["images", "awsEc2"]).stdout.splitlines()
-    assert "centos_8" in acid(["images", "azureVm"]).stdout.splitlines()
+    assert "ubuntu_20_04" in acid(["images", "azureVm"]).stdout.splitlines()
     acid(["images", "not_exists"], except_fail=True)
     acid(["images"], except_fail=True)
 
@@ -85,6 +85,10 @@ def test_images_completer():
 
 def test_agent(capsys):
     """acid start & stop"""
+    image = "ubuntu_20_04"
+    instance_type = "t3a.nano"
+    timeout = "15"
+
     check_connection = [
         "--",
         "-o",
@@ -98,7 +102,17 @@ def test_agent(capsys):
         with capsys.disabled():
             print("")
             acid(
-                ["start", "-t", "t3a.nano", "-a", "agent1", "-i", "centos_7"],
+                [
+                    "start",
+                    "-t",
+                    instance_type,
+                    "-a",
+                    "agent1",
+                    "-i",
+                    image,
+                    "-T",
+                    timeout,
+                ],
                 capture_output=False,
             )
         assert acid(["list"]).stdout.strip()
@@ -122,15 +136,15 @@ def test_agent(capsys):
                     [
                         "start",
                         "-t",
-                        "t3a.nano",
+                        instance_type,
                         "-i",
-                        "centos_7",
+                        image,
                         "-a",
                         "agent2",
+                        "-T",
+                        timeout,
                         "--ansiblePlaybook",
                         "tests/playbook.yml",
-                        "--ansibleRequirements",
-                        "tests/requirements.yml",
                         "--update",
                     ],
                     capture_output=False,
@@ -154,9 +168,18 @@ def test_agent(capsys):
 
         finally:
             with capsys.disabled():
-                acid(["stop", "-a", "agent2"], stdin="y\n", capture_output=False)
+                acid(
+                    ["stop", "-a", "agent2"],
+                    stdin="y\n",
+                    capture_output=False,
+                    xfail=True,
+                )
 
     finally:
         with capsys.disabled():
             for agent in acid(["list"]).stdout.strip().splitlines():
-                acid(["stop", "-a", agent, "-f"], capture_output=False)
+                acid(
+                    ["stop", "-a", agent, "-f"],
+                    capture_output=False,
+                    ignore_outcome=True,
+                )

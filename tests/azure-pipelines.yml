@@ -102,7 +102,6 @@ stages:
           image: centos_7
           instanceType: t3a.nano
           ansiblePlaybook: tests/playbook.yml
-          ansibleRequirements: tests/requirements.yml
           volumeSize: 15
 
       - template: agents/start.yml@acid
@@ -131,24 +130,12 @@ stages:
 
       - template: agents/start.yml@acid
         parameters:
-          jobName: startAgent_AzureVm_centOs7
-          agentDescription: Azure VM CentOS 7
-          provider: azureVm
-          image: centos_7
-          instanceType: Standard_B1ls
-          spot: false
-          inMemoryWorkDir: true
-          volumeSize: 70
-
-      - template: agents/start.yml@acid
-        parameters:
           jobName: startAgent_AzureVm_ubuntu1804
           agentDescription: Azure VM Ubuntu 18.04
           provider: azureVm
           image: ubuntu_18_04
           instanceType: Standard_F1
           ansiblePlaybook: tests/playbook.yml
-          ansibleRequirements: tests/requirements.yml
 
       # Tests
       - job: runTests_AwsEc2_centOs7
@@ -191,16 +178,6 @@ stages:
         steps:
           - template: test-steps-template.yml
 
-      - job: runTests_AzureVm_centOs7
-        displayName: Run tests on Azure VM CentOS 7
-        dependsOn: startAgent_AzureVm_centOs7
-        pool:
-          name: Default
-          demands:
-            - agent.Name -equals $(Build.BuildId) Azure VM CentOS 7
-        steps:
-          - template: test-steps-template.yml
-
       - job: runTests_AzureVm_ubuntu1804
         displayName: Run tests on Azure VM Ubuntu 18.04
         dependsOn: startAgent_AzureVm_ubuntu1804
@@ -239,13 +216,6 @@ stages:
           provider: awsEc2
           agentDescription: AWS EC2 Ubuntu 20.04
           dependsOn: runTests_AwsEc2_ubuntu2004
-
-      - template: agents/stop.yml@acid
-        parameters:
-          jobName: stopAgent_AzureVm_centOs7
-          provider: azureVm
-          agentDescription: Azure VM CentOS 7
-          dependsOn: runTests_AzureVm_centOs7
 
       - template: agents/stop.yml@acid
         parameters:

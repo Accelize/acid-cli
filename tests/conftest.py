@@ -43,6 +43,8 @@ def acid(
     stdin=None,
     capture_output=True,
     timeout=600,
+    ignore_outcome=False,
+    xfail=False,
 ):
     """
     Run acid.
@@ -56,6 +58,8 @@ def acid(
         stdin (str): If specified, send string over standard input.
         capture_output (bool): if True, capture output.
         timeout (int): Command timeout in seconds.
+        ignore_outcome (bool): If True, ignore return code.
+        xfail (bool): If true, xfail instead of fail.
 
     Returns:
         subprocess.CompletedProcess: Result
@@ -76,6 +80,9 @@ def acid(
             f'Timeout on "{" ".join(["acid"] + args)}" after {exception.args[1]:.0f}s'
         )
 
+    if ignore_outcome:
+        return process
+
     returncode = process.returncode
     if (returncode and not except_fail) or (except_fail and not returncode):
         if capture_output:
@@ -87,7 +94,7 @@ def acid(
                 stderr = f"STDERR:\n{stderr}"
         else:
             stdout = stderr = None
-        pytest.fail(
+        getattr(pytest, "xfail" if xfail else "fail")(
             f"\n\nCOMMAND:\n{' '.join(['acid'] + args)}\n\n"
             + "\n\n".join(out for out in (stdout, stderr) if out)
         )
