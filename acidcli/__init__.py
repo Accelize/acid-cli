@@ -319,7 +319,7 @@ class _Command:
             ("AZURE_AGENT_ENV", "agentEnv"),
         ):
             if self._params[parameter] is not None:
-                _os.environ[key] = self._params[parameter]
+                _os.environ[key] = str(self._params[parameter])
         del self._params["agentManagerToken"]
 
         tf_vars = {
