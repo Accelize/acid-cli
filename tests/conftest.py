@@ -44,7 +44,6 @@ def acid(
     capture_output=True,
     timeout=600,
     ignore_outcome=False,
-    xfail=False,
 ):
     """
     Run acid.
@@ -59,7 +58,6 @@ def acid(
         capture_output (bool): if True, capture output.
         timeout (int): Command timeout in seconds.
         ignore_outcome (bool): If True, ignore return code.
-        xfail (bool): If true, xfail instead of fail.
 
     Returns:
         subprocess.CompletedProcess: Result
@@ -94,7 +92,7 @@ def acid(
                 stderr = f"STDERR:\n{stderr}"
         else:
             stdout = stderr = None
-        getattr(pytest, "xfail" if xfail else "fail")(
+        pytest.fail(
             f"\n\nCOMMAND:\n{' '.join(['acid'] + args)}\n\n"
             + "\n\n".join(out for out in (stdout, stderr) if out)
         )

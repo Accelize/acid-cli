@@ -172,7 +172,6 @@ def test_agent(capsys):
                     ["stop", "-a", "agent2"],
                     stdin="y\n",
                     capture_output=False,
-                    xfail=True,
                 )
 
     finally:
